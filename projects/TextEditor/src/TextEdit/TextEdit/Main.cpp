@@ -13,6 +13,7 @@
 #include <vector>
 #include <locale>
 #include <codecvt>
+#include <iterator>
 
 using namespace std;
 
@@ -44,7 +45,7 @@ int main(int argc, char* argv[])
 	attroff(A_DIM);
 
 	//create text field
-	WINDOW* sub_window;
+	WINDOW * sub_window;
 	sub_window = subwin(main_window, num_rows - 2, num_cols - 2, 1, 1);
 
 
@@ -122,6 +123,11 @@ int main(int argc, char* argv[])
 	//then it will be added to subwin as a char based on the current location of col_loc and
 	//row_loc, counter for column will then increment by one unless it's at the end of the 
 	//screen, then row_loc will increment by one and col_loc will revert to default location
+
+	unsigned int size = 1;
+	vector<wstring> srcfile{};
+	//srcfile.resize(100);
+
 	while (typing != '*')
 	{
 		int type_input = getch();
@@ -129,11 +135,12 @@ int main(int argc, char* argv[])
 		if (type_input == 27)
 		{
 			//string filename = argv[1];
+			//vector<string> myFile;
 			vector<wstring> myFile;
-			ifstream src;
+			wifstream src;
 			src.open("Test.txt");
 			//src.open(filename);
-			string line;
+			wstring line;
 			//wstring newline;
 
 			while (!src.eof())
@@ -144,29 +151,30 @@ int main(int argc, char* argv[])
 				//std::string wstr_turned_to_str = std::wstring_convert<std::codecvt_utf8<wchar_t>>().to_bytes(newline);
 				//myFile.push_back(newline);
 				myFile.push_back(wstring{ line.begin(), line.end() });
+				//myFile.push_back(line);
 			}
 
 			src.close();
 
 			//string newline;
 
-			//Note to self: possibly use copy constructor instead of for loop?row_loc
-
 			for (int i = 0; i < myFile.size(); i++)
 			{
-
 				//col_loc = sizeof(line) + col_loc;
-				mvwaddwstr(sub_window, col_loc, row_loc, myFile[i].c_str());
+				mvwaddwstr(sub_window, col_loc, row_loc, myFile[i].c_str());  //wstring version
+				//mvwaddstr(sub_window, col_loc, row_loc, myFile[i].c_str());   //regular string version 
 				col_loc++;
 
 			}
 
-			if (type_input == '`')
+			//copy this vector into vector that will output to a file if user chooses to save
+			//string version of copy loop works, SO FAR WSTRING DOES NOT
+			for (int i = 0; i < myFile.size(); i++)
 			{
-				ofstream src;
-				src.open("test.txt");
-
+				srcfile.push_back(wstring{ (wstring)myFile[i] });
+				//srcfile.push_back(string{ (string)myFile[i] });
 			}
+
 			wrefresh(sub_window);
 		}
 
@@ -180,6 +188,8 @@ int main(int argc, char* argv[])
 		{
 			mvwaddch(sub_window, row_loc, col_loc, type_input);
 			typing = type_input;
+			srcfile.push_back(wstring{ (wchar_t)type_input });
+			//srcfile.push_back(" ");
 			wrefresh(sub_window);
 		}
 		if (col_loc >= num_cols - 20)
@@ -188,22 +198,32 @@ int main(int argc, char* argv[])
 			col_loc = 0;
 		}
 		col_loc++;
-	}
+		if (type_input == '`')
+		{
+			wofstream outputfile;
+			outputfile.open("test2.txt");
+			for (int i = 0; i < srcfile.size(); i++)
+			{
+				outputfile << srcfile[i];
+			}
+		}
 
-	//user presses asterick to exit, subwindow clears, main window clears
-	//then both windows exit
-	if (typing == '*')
-	{
-		wclear(sub_window);
-		clear();
-		refresh();
+		//user presses asterick to exit, subwindow clears, main window clears
+		//then both windows exit
+		if (typing == '*')
+		{
+			wclear(sub_window);
+			clear();
+			refresh();
+			wrefresh(sub_window);
+		}
+
 		wrefresh(sub_window);
+
+		//end curses mode, deletes both windows
+		//delwin(sub_window);
+		//endwin();
 	}
-
-	wrefresh(sub_window);
-
-	//end curses mode, deletes both windows
-	delwin(sub_window);
-	endwin();
 }
+
 
